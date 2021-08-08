@@ -1,12 +1,17 @@
 # importing Libraries
 from pytube import YouTube, Playlist
 import time
+import string
+import unicodedata as ud
+import pyarabic.araby as araby
+import re
+from pytube.cli import on_progress
 
 # Simple function to be used to show that video dowloaded
 def finish():
     print('Video Downloaded')
-
-
+    
+    
 while True:
     # getting input from the user
     inp = input("Link: ")
@@ -19,13 +24,12 @@ while True:
     
     # Getting output path from the user if pressing enter putting it in the default directory
     output_path = input('Enter Your Directory Path: ').strip()
-    
     # Default directory you can chamge it if you like
     if len(output_path) < 1: output_path = 'D:\Courses'    
     
     # downloading a video
     if int(type_link) == 1:
-        yt = YouTube(inp)
+        yt = YouTube(inp, on_progress_callback = on_progress)
         
         # printing video tiltle & thumnail url
         print(yt.title) 
@@ -68,39 +72,55 @@ while True:
                 '''
         # looping through the playlist
         for video in list(p.videos)[x:]:
+        # Cleaning names in Arabic and English
+            p_name = p.title.translate(str.maketrans('', '', string.punctuation))
+            p_name = ''.join(c for c in p_name if not ud.category(c).startswith('P'))
+            p_name = araby.strip_diacritics(p_name)
+            p_name = re.sub(r'\s+', ' ', p_name)
+            
+            video_name = video.title.translate(str.maketrans('', '', string.punctuation))
+            video_name = ''.join(c for c in video_name if not ud.category(c).startswith('P'))
+            video_name = araby.strip_diacritics(video_name)
+            video_name = re.sub(r'\s+', ' ', video_name)
             try:
                 x+=1
                 # downloading the file
+                print(x)
+                print(video_name)
+                video.register_on_progress_callback(on_progress)
                 video.streams.filter(progressive=True, res='720p').first().download(
-                    output_path= f"{output_path}\\{p.title.replace('|', '')}",
-                    filename='{} {}'.format(x, video.title))
+                    output_path= f"{output_path}\\{p_name}",
+                    filename='{} {}.mp4'.format(x, video_name))
+
                 # finished message
                 video.register_on_complete_callback(finish())
-                print(x)
-                print(video.title)
+               
                 # sleeping for connection problems
                 time.sleep(5)
-                
+
             except:
                 try:
                     # downloading the file
+                    print(x)
+                    print(video_name)
+                    video.register_on_progress_callback(on_progress)
                     video.streams.get_highest_resolution().download(
-                        output_path= f"{output_path}\\{p.title.replace('|', '')}",
-                        filename='{} {}'.format(x, video.title))
+                        output_path= f"{output_path}\\{p_name}",
+                        filename='{} {}'.format(x, video_name))
+                    
                     # finished message                    
                     video.register_on_complete_callback(finish())
-                    print(x)
-                    print(video.title)
+                    
                     # sleeping for connection problems
                     time.sleep(5)
-                    
+
                 except:
                     # if failed, continue with the next video
                     continue
                     
     # downloading a Video as an Audio
     elif int(type_link) == 3:
-        yt = YouTube(inp)
+        yt = YouTube(inp, on_progress_callback = on_progress)
         # printing video tiltle
         print(yt.title)
         
@@ -136,12 +156,14 @@ while True:
         for video in list(p.videos)[x:]:
             x+=1
             # downloading the file
+            print(x)
+            print(video.title)
+            video.register_on_progress_callback(on_progress)
             video.streams.filter(only_audio=True, mime_type="audio/mp4", abr="128kbps").first().download(
                 output_path=f"{output_path}\\{p.title}", filename='{} {}'.format(x, video.title))
             # finished message
             video.register_on_complete_callback(finish())
-            print(x)
-            print(video.title)
+           
             # sleeping for connection problems
             time.sleep(5)
     break
